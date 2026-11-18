@@ -277,7 +277,7 @@ This is an installer repo, not a runtime skill. Read the root `SKILL.md` first. 
 
 1. Clone the repo to `/tmp/pave-transin-setup`.
 2. Read `/tmp/pave-transin-setup/INSTALL.md` and follow it exactly.
-3. `install.sh` starts Playwright, Chrome, Chromium, and `agent-browser` installation in the background by default. Do not wait for it in the main session. `--no-browser` is only for an explicit user request.
+3. `install.sh` starts Playwright, Chrome, Chromium, and `agent-browser` installation in the background by default. Do not wait for it in the main session. `--no-browser` is only for an explicit user request. If the Bash sandbox blocks network or apt, use `--no-network` and report which CLIs are missing; do not retry a timed-out command.
 4. Immediately start a background monitoring sub-session. It should run `bash /tmp/pave-transin-setup/browser-install-wait.sh`, which returns as soon as the state is `done`, `partial`, or `failed`; report the real result. Do not busy-wait or use a fixed timer in the main session.
 5. Run `/tmp/pave-transin-setup/verify.sh` and report the real output. `WAIT` means the background browser install is still running, not a failure. A `MISS` line is not a success.
 6. Say plainly that installing is not logging in. The logins are the user's job: `/setup`.
@@ -290,5 +290,6 @@ Installer invariants:
 | `unzip` must exist before the Composio installer runs | `preflight` installs it when possible; `install_composio` refuses with a clear message otherwise |
 | Every global npm install goes under `~/.npm-global` | `NPM_CONFIG_PREFIX` is exported by `install.sh` and inherited by the background installer |
 | Browser completion must not wait on a fixed timer | `browser-install-wait.sh` exits immediately on `done`, `partial`, or `failed` |
+| A blocked network must fail fast, not hang | `preflight` probes once and `--no-network` skips remote installs |
 
 Never write a session token, API key, or cookie into a file, a commit, or the chat.

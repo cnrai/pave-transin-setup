@@ -7,6 +7,7 @@ STATE_DIR="${PAVE_HOME}/browser-install"
 STATUS_FILE="${STATE_DIR}/status.txt"
 LOG_FILE="${STATE_DIR}/install.log"
 ALLOW_APT="${ALLOW_APT:-1}"
+BROWSER_STEP_TIMEOUT="${BROWSER_STEP_TIMEOUT:-900}"
 mkdir -p "$STATE_DIR"
 
 export PATH="$HOME/.local/bin:$HOME/.composio:$HOME/.npm-global/bin:$PATH"
@@ -61,7 +62,11 @@ write_status "running" "dependencies"
 
 run() {
   printf '\n[%s] %s\n' "$(date -u +%Y-%m-%dT%H:%M:%SZ)" "$*" >> "$LOG_FILE"
-  "$@" >> "$LOG_FILE" 2>&1
+  if command -v timeout >/dev/null 2>&1; then
+    timeout "$BROWSER_STEP_TIMEOUT" "$@" >> "$LOG_FILE" 2>&1
+  else
+    "$@" >> "$LOG_FILE" 2>&1
+  fi
 }
 
 if ! command -v npm >/dev/null 2>&1; then

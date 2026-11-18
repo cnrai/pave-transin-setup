@@ -35,6 +35,14 @@ bash /tmp/pave-transin-setup/install.sh --agents "/你的工作區/AGENTS.md"
 bash /tmp/pave-transin-setup/install.sh --no-browser
 ```
 
+如果 Bash sandbox 限制 network、`apt` 或只允許 filesystem/Node，先不要重試原本命令。改用：
+
+```bash
+bash /tmp/pave-transin-setup/install.sh --no-network
+```
+
+這會跳過 `oo`、`composio`、`officecli` 和瀏覽器下載，只安裝本機已有的 skills/AGENTS。缺少的 CLI 要在有網絡的 shell 再裝。
+
 ### 2.1 立刻開子 session 監控
 
 `install.sh` 返回後，主 session 要立即做兩件事：
@@ -133,6 +141,8 @@ Playwright + Chrome 的下載由背景子 session 監控；主對話先繼續。
 | `composio: command not found` | `export PATH="$HOME/.composio:$HOME/.local/bin:$PATH"` |
 | `heygen-mcp` 未生成 | 確認 `~/.pave/skills/heygen-mcp/package.json` 存在，再 `cd` 進去 `npm install -g .` |
 | apt 要 root | 跳過瀏覽器，改用 curl；或請用戶在宿主機裝 `xvfb`、`xfonts-base` |
+| Bash sandbox 限制 network/apt | 不要重試長命令；改用 `--no-network`，回報哪些 CLI 缺 |
+| `install.sh` 45 秒 timeout | 檢查 `~/.pave/browser-install/status.txt`；不要假設安裝完成 |
 | 安裝腳本 exit 1 | 把 `!` 開頭的行原文貼給用戶，不要摘要成「失敗了」 |
 
 ## 8. 檔案說明

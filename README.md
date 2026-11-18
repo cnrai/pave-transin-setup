@@ -38,6 +38,7 @@ bash /tmp/pave-transin-setup/verify.sh
 ```bash
 bash install.sh --skills-only      # 只複製 skills 和 AGENTS.md
 bash install.sh --no-browser       # 不裝 Playwright、Chrome、agent-browser
+bash install.sh --no-network       # 跳過 remote CLI 與瀏覽器下載
 bash install.sh --no-apt           # 不呼叫 apt-get
 bash install.sh --force-skills     # 覆蓋已有的 skill
 bash install.sh --agents <path>    # 指定 AGENTS.md 位置

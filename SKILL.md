@@ -44,6 +44,11 @@ do not treat this as a normal `SKILL.md` import.
 background. It returns quickly. Do not wait for those downloads in the main
 conversation.
 
+If the Bash sandbox blocks network or apt, or only permits filesystem/Node
+operations, run `install.sh --no-network`. Report which CLIs are already
+present and which must be installed later in a network-enabled shell. Do not
+retry a command that already timed out.
+
 ## Monitor without blocking
 
 Immediately start a background sub-session and have it run:
