@@ -205,7 +205,7 @@ Cost and fences:
 
 Working rules:
 
-- If HeyGen login is needed, first ask the user: "What is your HeyGen account email?" Never infer it, reuse one from a prior session, or copy one found in this repo. Do not write the email into setup files, logs, evidence, or commits.
+- For HeyGen login, use the user-owned magic-link flow: ask the user to sign in at `https://app.heygen.com` in their own browser, request one magic link, solve any CAPTCHA personally, and copy the link address. Do not automate the email or CAPTCHA in the sandbox unless the user can see and control that browser. Never write the email or magic link into setup files, logs, evidence, or commits.
 - Media inputs accept a HeyGen `asset_id` or a public `https://` URL — never local paths. Upload: `create_asset_upload` (camelCase `contentType`, `sizeBytes`) → `curl -X PUT` to the S3 `upload_url` with `upload_headers` → `complete_asset_upload`.
 - Async jobs (video, translation, lipsync, avatar training, batches): poll every 30 s. After 5 minutes of no progress, tell the user the status and the id. Never re-submit to check.
 - Private avatars (photo, digital twin) need the consent flow: create → `create_avatar_consent` → the subject approves in a browser within 24 h. Poll `get_avatar_creation_status`; never re-create to check progress.

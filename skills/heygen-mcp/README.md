@@ -6,39 +6,53 @@ This is a doctrine-first skill: its payload is `SKILL.md` plus per-product-area 
 
 ## CLI for Debian sandboxes
 
-The CLI exposes the remote MCP server without registering all 114 tool schemas with the agent. OAuth uses a persistent, headed `agent-browser` session inside the sandbox. It captures the loopback redirect URL from the browser, so **no local callback HTTP server is required**.
+The CLI exposes the remote MCP server without registering all 114 tool schemas with the agent. OAuth uses a persistent, headed `agent-browser` session inside the sandbox. During the authorization tail, the CLI starts a short-lived loopback listener inside the sandbox, captures `code` and `state` at the socket, responds once, and closes the listener. This avoids Chromium replacing the failed callback with `chrome-error://chromewebdata/`. No callback server is needed on the user's machine.
 
-### Install
+### Install and preflight
 
 ```bash
 npm i -g agent-browser
 agent-browser install --with-deps
+sudo apt-get update && sudo apt-get install -y xvfb xfonts-base
 npm install -g .
+heygen-mcp doctor
 ```
 
-Node.js 18 or newer is required. On a displayless Debian host, `agent-browser --headed` starts Xvfb automatically; do not disable it for HeyGen login.
+Node.js 18 or newer is required. A headed browser on displayless Debian still needs the system `xvfb` package; `agent-browser install --with-deps` alone did not install it in the verified sandbox. `heygen-mcp doctor` reports Node, `agent-browser`, `DISPLAY`/`Xvfb`, callback-port availability, token, and pending-login state with an exact fix for each failure.
 
-### Login
+### Login with a user-owned magic link
 
-The agent runs these commands. The user does not need shell access.
+This is the preferred sandbox flow. The user solves any CAPTCHA in their own browser, so the sandbox never sends the login email.
 
-First ask the user for their HeyGen account email. Do not assume an address from a previous session, a file, or an example.
+Give the user these instructions:
+
+1. Open `https://app.heygen.com` in a private window.
+2. Choose **Use email**, enter the HeyGen account email, and choose **Send a secure magic link** once.
+3. Complete **Verify you are human** personally if it appears.
+4. Open the newest HeyGen email, right-click the button, and choose **Copy link address**. Do not click the button: the link is single-use and must be consumed by the sandbox browser.
+5. Paste the copied link into the chat.
+
+The agent then runs:
 
 ```bash
-# 1. Start OAuth and request one magic link.
-heygen-mcp login --email "<user's HeyGen account email>"
-
-# 2. Copy the link address from the NEWEST HeyGen email and pass it to the
-# sandbox browser through stdin. Do not open it in the user's local browser.
+# Read the link from stdin so it does not appear in CLI arguments.
 heygen-mcp login --magic-link < magic-link.txt
 
-# 3. Only if HeyGen presents the plan picker, after the user chooses a plan:
+# Only after the user chooses a plan and the CLI reports plan_required:
 heygen-mcp login --plan free
+
+heygen-mcp whoami
 ```
 
-Remove `magic-link.txt` immediately after use. A magic link is a single-use credential. Request only one link; each resend invalidates earlier links. Clicking it only on the user's own computer does not authenticate the browser inside the sandbox; its URL must be opened by the sandbox browser. If HeyGen presents an interactive CAPTCHA, stop and arrange manual access to the sandbox browser rather than bypassing it.
+Remove `magic-link.txt` immediately. Both `https://app.heygen.com/magic-web/...` and the newer `https://auth.heygen.com/magic-web/...` links are accepted. A successful redemption may land on `https://app.heygen.com/home` instead of showing the older "Return to your original tab" page; both are accepted.
 
-The CLI exits with status `7` when a plan choice is required. `free`, `creator`, and `pro` are accepted only in the separate `login --plan` invocation, after the picker appears. Paid plans require the user's explicit approval. HeyGen authorization state can expire in about 13 minutes, so the CLI creates a fresh authorization after magic-link redemption and again before the plan-selected tail. Tokens are stored in `~/.heygen-mcp/tokens.json` with mode `0600`; refresh is automatic. Pending login state is stored separately with mode `0600` and removed after success. Do not run the old OAuth bridge on port `49153` at the same time.
+`heygen-mcp login --email <address>` remains available only when the user can interact with the sandbox browser to solve the CAPTCHA. Do not use it as a blind background step.
+
+If `agent-browser` reports `Resource temporarily unavailable` or “no response came back”, the daemon may or may not have run the command. Run `heygen-mcp doctor`. If the browser is already on `app.heygen.com/home`, run `heygen-mcp login --resume` to continue with fresh OAuth state. Otherwise request one new magic link.
+
+The CLI exits with status `7` when a plan choice is required. `free`, `creator`, and `pro` are accepted only in the separate `login --plan` invocation, after the picker appears. Paid plans require the user's explicit approval. HeyGen authorization state can expire in about 13 minutes, so the CLI creates a fresh authorization after magic-link redemption and again before the plan-selected tail. Tokens are stored in `~/.heygen-mcp/tokens.json` with mode `0600`; refresh is automatic. Pending login state is stored separately with mode `0600` and removed after success. The CLI owns the loopback callback port only during the authorization tail; `doctor` verifies that it is free. Do not run the old OAuth bridge on the same port concurrently.
+
+The callback listener is part of OAuth's normal loopback flow. It accepts only a top-level document navigation to the expected origin and path, with the expected OAuth `state` and a non-empty `code` or OAuth `error`; other requests get `400`. It keeps the latest valid candidates, uses them only after the browser reports a callback or `chrome-error://`, and tries another candidate if the browser URL or a code exchange fails. It records no token file, writes authorization codes only to process memory, and closes in a `finally` block even when login exits with a plan gate or error.
 
 ### Use MCP tools on demand
 
@@ -54,7 +68,7 @@ Tool results with `isError: true` are printed and return CLI exit status `2`. `t
 
 All existing safety fences still apply. Paid generation calls require the platform/cost disclosure and any approval required by the host doctrine. Subscription actions (`cancel_subscription`, `show_subscription_action`, and `continue_subscription_cancellation`) require an explicit user request and a final confirmation. Never use the generic `call` command to bypass those gates.
 
-The CLI login and MCP flows have passed an automated mock-server smoke test. Live HeyGen login through `agent-browser` is not yet verified; the existing Playwright lane below remains the verified fallback.
+The CLI OAuth/MCP flows pass automated mock-server tests. A real sandbox session on 2026-11-17 completed a user-owned `auth.heygen.com` link, consent, plan selection, token exchange, and `whoami` using a small loopback responder because Chromium hid the failed callback URL. That responder is now built into the CLI; the built-in path is mock-verified and still deserves a second live run.
 
 ## PAVE skill install
 

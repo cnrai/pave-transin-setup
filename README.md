@@ -42,7 +42,7 @@ bash install.sh --agents <path>    # 指定 AGENTS.md 位置
 
 ## 不會做什麼
 
-- 不替你登入。`oo` 和 `composio` 要本人授權，裝好之後打 `/setup`。要使用 HeyGen 時，`/setup` 會先問你的 HeyGen 帳號 email，再由你完成 magic link。
+- 不替你登入。`oo` 和 `composio` 要本人授權，裝好之後打 `/setup`。要使用 HeyGen 時，`/setup` 會請你在自己的瀏覽器登入、完成人機驗證，再把 magic link 交給 sandbox。
 - 不寫任何 token 入檔案。
 - 不改你已有的 skill（除非加 `--force-skills`）。
 

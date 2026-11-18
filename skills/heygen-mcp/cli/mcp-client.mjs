@@ -42,7 +42,7 @@ export class McpClient {
     await this.rpc("initialize", {
       protocolVersion: "2025-03-26",
       capabilities: {},
-      clientInfo: { name: "openpave-heygen-cli", version: "0.3.0" },
+      clientInfo: { name: "openpave-heygen-cli", version: "0.3.2" },
     });
     await this.rpc("notifications/initialized", undefined, true);
   }

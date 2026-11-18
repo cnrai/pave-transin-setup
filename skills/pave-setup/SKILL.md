@@ -1,6 +1,6 @@
 ---
 name: setup
-description: 首次設定。檢查 CLI 是否齊全，帶用戶登入 oo 與 Composio；需要 HeyGen 時先詢問帳號 email 再引導登入。用在第一次對話、或工具顯示未登入時。
+description: 首次設定。檢查 CLI 是否齊全，帶用戶登入 oo 與 Composio；需要 HeyGen 時引導用戶在自己的瀏覽器完成登入。用在第一次對話、或工具顯示未登入時。
 commands:
   - name: setup
     description: 檢查並完成 oo / Composio 登入；可選 HeyGen
@@ -106,17 +106,22 @@ composio login --no-wait --no-skill-install
 
 只在用戶要使用 HeyGen 時才做。
 
-先問一句：
+先請用戶自己在瀏覽器登入，不要把 email 交給 agent 代寄：
 
-> 你的 HeyGen 帳號 email 是甚麼？
+1. 開 `https://app.heygen.com`，最好用無痕視窗。
+2. 點 `Use email`，由用戶自己輸入 email。
+3. 按一次 `Send a secure magic link`。
+4. `Verify you are human` 由用戶自己完成。
+5. 開最新一封 HeyGen email，右鍵按鈕，選 `Copy link address`，不要直接點開。
+6. 把連結貼回對話。
 
 規則：
 
-- 不要從舊對話、檔案、Git 歷史或範例猜 email。
-- 不要在檔案、log、commit 或對話摘要寫下 email。
+- 不要在 sandbox 自動送 email。
+- 不要嘗試處理或繞過 Turnstile。
+- 不要把 email 寫入檔案、log 或 commit。
 - 如果 `heygen-mcp` 或 `agent-browser` 未安裝，先說未安裝。不要為此下載 Chromium。
-- 已安裝就按 `heygen-mcp` skill 的登入流程。
-- 如果 CAPTCHA 卡住，停下來，請用戶處理；不要繞過。
+- 已安裝就按 `heygen-mcp` skill 的 user-owned magic-link 流程登入。
 
 ### 5. 可選：Google Drive
 

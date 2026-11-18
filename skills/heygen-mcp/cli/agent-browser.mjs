@@ -8,7 +8,7 @@ export class AgentBrowser {
     this.session = session;
   }
 
-  async run(args, { allowFailure = false, redact = [] } = {}) {
+  async run(args, { allowFailure = false, redact = [], retry = 0 } = {}) {
     const globalArgs = [
       "--session",
       this.session,
@@ -16,7 +16,7 @@ export class AgentBrowser {
       this.session,
       "--headed",
     ];
-    const result = await new Promise((resolve, reject) => {
+    const execute = () => new Promise((resolve, reject) => {
       const windowsBatch = process.platform === "win32" && /\.(cmd|bat)$/i.test(this.command);
       const quoteBatchArg = (value) => `"${String(value).replace(/"/g, '""')}"`;
       const command = windowsBatch ? (process.env.ComSpec || "cmd.exe") : this.command;
@@ -37,7 +37,7 @@ export class AgentBrowser {
       child.on("error", (error) => {
         if (error.code === "ENOENT") {
           reject(new AgentBrowserError(
-            "agent-browser is not installed. Run: npm i -g agent-browser && agent-browser install --with-deps",
+            "agent-browser is not installed. Run: heygen-mcp doctor, then npm i -g agent-browser && agent-browser install --with-deps",
           ));
         } else {
           reject(error);
@@ -46,8 +46,23 @@ export class AgentBrowser {
       child.on("close", (code) => resolve({ code, stdout, stderr }));
     });
 
+    let result;
+    for (let attempt = 0; attempt <= retry; attempt++) {
+      result = await execute();
+      const transient = /Resource temporarily unavailable|no response came back|os error 11/i
+        .test(`${result.stderr}\n${result.stdout}`);
+      if (result.code === 0 || !transient || attempt === retry) break;
+      await new Promise((resolve) => setTimeout(resolve, 750));
+    }
+
     let detail = `${result.stderr}\n${result.stdout}`.trim();
     for (const secret of redact) detail = detail.split(secret).join("[redacted]");
+    const transient = /Resource temporarily unavailable|no response came back|os error 11/i.test(detail);
+    if (transient) {
+      throw new AgentBrowserError(
+        `agent-browser lost contact with its daemon during ${args[0]}; the command may or may not have run. Run heygen-mcp doctor, then inspect the browser before retrying.`,
+      );
+    }
     if (result.code !== 0 && !allowFailure) {
       throw new AgentBrowserError(
         `agent-browser ${args[0]} failed${detail ? `: ${detail.slice(0, 800)}` : ""}`,
@@ -56,8 +71,8 @@ export class AgentBrowser {
     return { ...result, detail };
   }
 
-  async open(url) {
-    await this.run(["open", url], { redact: [url] });
+  async open(url, { retry = false } = {}) {
+    await this.run(["open", url], { redact: [url], retry });
   }
 
   async clickButton(name, { optional = false } = {}) {
@@ -78,21 +93,23 @@ export class AgentBrowser {
   }
 
   async snapshot() {
-    const result = await this.run(["snapshot", "-c"]);
+    const result = await this.run(["snapshot", "-c"], { retry: 1 });
     return result.stdout;
   }
 
   async wait(milliseconds) {
-    await this.run(["wait", String(milliseconds)]);
+    await this.run(["wait", String(milliseconds)], { retry: 1 });
   }
 
   async currentUrl() {
-    const result = await this.run(["get", "url"]);
+    const result = await this.run(["get", "url"], { retry: 1 });
     const lines = result.stdout.trim().split(/\r?\n/);
     return lines.at(-1)?.trim() || "";
   }
 
   async close() {
-    await this.run(["close"], { allowFailure: true });
+    try {
+      await this.run(["close"], { allowFailure: true });
+    } catch {}
   }
 }

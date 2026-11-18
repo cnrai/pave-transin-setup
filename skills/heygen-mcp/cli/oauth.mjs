@@ -3,6 +3,7 @@ import fs from "node:fs";
 import os from "node:os";
 import path from "node:path";
 import { AgentBrowser } from "./agent-browser.mjs";
+import { startCallbackServer } from "./callback-server.mjs";
 
 export class LoginRequiredError extends Error {
   constructor(message, exitCode = 1) {
@@ -134,15 +135,74 @@ function selectedPlan(plan) {
   return names[plan];
 }
 
-async function finishAuthorization(browser, pending, config, plan) {
+async function finishAuthorization(browser, pending, config, plan, callbackServer) {
   const chosen = selectedPlan(plan);
+  const expectedCallback = new URL(config.redirectUri);
   const deadline = Date.now() + 120_000;
+  const attemptedCodes = new Set();
+  let lastExchangeError;
   let consentClicked = false;
   let planClicked = false;
-  let code;
-  while (Date.now() < deadline && !code) {
-    code = parseCallbackUrl(await browser.currentUrl(), pending, config);
-    if (code) break;
+
+  const complete = async (code) => {
+    const tokens = await tokenRequest(config, {
+      grant_type: "authorization_code",
+      code,
+      redirect_uri: config.redirectUri,
+      client_id: config.clientId,
+      code_verifier: pending.verifier,
+      resource: config.resource,
+    });
+    try { fs.unlinkSync(config.pendingFile); } catch {}
+    await browser.close();
+    return tokens;
+  };
+
+  while (Date.now() < deadline) {
+    const browserUrl = await browser.currentUrl();
+    let redirected = browserUrl.startsWith("chrome-error://");
+    try {
+      const current = new URL(browserUrl);
+      redirected ||= current.origin === expectedCallback.origin && current.pathname === expectedCallback.pathname;
+    } catch {}
+
+    if (!attemptedCodes.has(browserUrl)) {
+      let browserCode = null;
+      try {
+        browserCode = parseCallbackUrl(browserUrl, pending, config);
+      } catch (error) {
+        lastExchangeError = error;
+      }
+      if (browserCode) {
+        attemptedCodes.add(browserUrl);
+        try {
+          return await complete(browserCode);
+        } catch (error) {
+          lastExchangeError = error;
+        }
+      }
+    }
+
+    if (redirected) {
+      for (const candidate of callbackServer.urls().slice().reverse()) {
+        if (attemptedCodes.has(candidate)) continue;
+        attemptedCodes.add(candidate);
+        let candidateCode = null;
+        try {
+          candidateCode = parseCallbackUrl(candidate, pending, config);
+        } catch (error) {
+          lastExchangeError = error;
+          continue;
+        }
+        if (!candidateCode) continue;
+        try {
+          return await complete(candidateCode);
+        } catch (error) {
+          lastExchangeError = error;
+        }
+      }
+    }
+
     const snapshot = await browser.snapshot();
     if (/invalid or expired state/i.test(snapshot)) {
       throw new LoginRequiredError("HeyGen expired the authorization state. Run heygen-mcp login again to create a fresh one.");
@@ -178,83 +238,107 @@ async function finishAuthorization(browser, pending, config, plan) {
     }
     await browser.wait(1000);
   }
-  if (!code) {
-    throw new LoginRequiredError("Authorization did not reach the callback. Start login again; request a new magic link only if HeyGen still requires email login.");
+  if (lastExchangeError) {
+    throw new LoginRequiredError(`Callback code exchange did not succeed: ${lastExchangeError.message}`);
   }
-  const tokens = await tokenRequest(config, {
-    grant_type: "authorization_code",
-    code,
-    redirect_uri: config.redirectUri,
-    client_id: config.clientId,
-    code_verifier: pending.verifier,
-    resource: config.resource,
-  });
-  try { fs.unlinkSync(config.pendingFile); } catch {}
-  await browser.close();
-  return tokens;
+  throw new LoginRequiredError("Authorization did not reach the callback. Start login again; request a new magic link only if HeyGen still requires email login.");
 }
 
-export async function login(config, { email, magicLink, plan } = {}) {
+async function authorizeAndFinish(browser, pending, config, plan) {
+  const callbackServer = await startCallbackServer(config.redirectUri, pending.state);
+  try {
+    await browser.open(pending.authorizeUrl, { retry: true });
+    await browser.wait(3000);
+    return await finishAuthorization(browser, pending, config, plan, callbackServer);
+  } finally {
+    await callbackServer.close();
+  }
+}
+
+export async function login(config, { email, magicLink, plan, resume } = {}) {
   const browser = new AgentBrowser({ command: config.browserCommand });
   let pending = readPrivate(config.pendingFile);
+
+  if (resume) {
+    pending = createAuthorization(config);
+    pending.stage = "browser_authenticated";
+    writePrivate(config.pendingFile, pending);
+    const tokens = await authorizeAndFinish(browser, pending, config, null);
+    return { pending: false, tokenFile: config.tokenFile, expiresAt: tokens.expires_at };
+  }
 
   if (email) {
     pending = createAuthorization(config);
     pending.stage = "email_started";
     writePrivate(config.pendingFile, pending);
-    await browser.open(pending.authorizeUrl);
-    await browser.wait(3000);
-    let snapshot = await browser.snapshot();
-    const useEmailClicked = /use email/i.test(snapshot)
-      ? await browser.clickButton("Use email", { optional: true })
-      : false;
-    if (useEmailClicked) {
-      await browser.wait(1500);
+    const callbackServer = await startCallbackServer(config.redirectUri, pending.state);
+    try {
+      await browser.open(pending.authorizeUrl, { retry: true });
+      await browser.wait(3000);
+      let snapshot = await browser.snapshot();
+      const useEmailClicked = /use email/i.test(snapshot)
+        ? await browser.clickButton("Use email", { optional: true })
+        : false;
+      if (useEmailClicked) {
+        await browser.wait(1500);
+        snapshot = await browser.snapshot();
+      }
+      const emailFormVisible = useEmailClicked || /input type="email"|textbox.*email|enter your email/i.test(snapshot);
+      if (!emailFormVisible) {
+        const tokens = await finishAuthorization(browser, pending, config, null, callbackServer);
+        return { pending: false, tokenFile: config.tokenFile, expiresAt: tokens.expires_at };
+      }
+      await browser.fillEmail(email);
+      await browser.clickButton("send a secure magic link");
+      await browser.wait(8000);
       snapshot = await browser.snapshot();
+      const sendConfirmed = /check your (email|inbox)|magic link (has been )?sent|return to your original tab/i.test(snapshot);
+      if (/suspicious activity|flagged/i.test(snapshot) || !sendConfirmed) {
+        const pendingSend = /sending[.…]?/i.test(snapshot);
+        throw new LoginRequiredError(
+          pendingSend
+            ? "HeyGen is still showing Sending. An interactive CAPTCHA may be blocking the request; arrange manual browser access and do not resend the link."
+            : "HeyGen did not explicitly confirm the magic-link request. Check the browser before retrying; do not resend blindly.",
+        );
+      }
+      pending.stage = "magic_link_sent";
+      writePrivate(config.pendingFile, pending);
+      return {
+        pending: true,
+        message: "Magic link requested. Copy the link address from the newest HeyGen email and pass it to heygen-mcp login --magic-link through stdin. Do not open it in another browser.",
+      };
+    } finally {
+      await callbackServer.close();
     }
-    const emailFormVisible = useEmailClicked || /input type="email"|textbox.*email|enter your email/i.test(snapshot);
-    if (!emailFormVisible) {
-      const tokens = await finishAuthorization(browser, pending, config, null);
-      return { pending: false, tokenFile: config.tokenFile, expiresAt: tokens.expires_at };
-    }
-    await browser.fillEmail(email);
-    await browser.clickButton("send a secure magic link");
-    await browser.wait(8000);
-    snapshot = await browser.snapshot();
-    const sendConfirmed = /check your (email|inbox)|magic link (has been )?sent|return to your original tab/i.test(snapshot);
-    if (/suspicious activity|flagged/i.test(snapshot) || !sendConfirmed) {
-      const pendingSend = /sending[.…]?/i.test(snapshot);
-      throw new LoginRequiredError(
-        pendingSend
-          ? "HeyGen is still showing Sending. An interactive CAPTCHA may be blocking the request; arrange manual browser access and do not resend the link."
-          : "HeyGen did not explicitly confirm the magic-link request. Check the browser before retrying; do not resend blindly.",
-      );
-    }
-    pending.stage = "magic_link_sent";
-    writePrivate(config.pendingFile, pending);
-    return {
-      pending: true,
-      message: "Magic link requested. Copy the link address from the newest HeyGen email and pass it to heygen-mcp login --magic-link through stdin. Do not open it in another browser.",
-    };
   }
 
   if (magicLink) {
-    if (!pending) throw new LoginRequiredError("No pending login. Run heygen-mcp login --email <address> first.");
-    if (!/^https:\/\/app\.heygen\.com\/magic-web\//.test(magicLink)) {
-      throw new LoginRequiredError("The magic link must be an https://app.heygen.com/magic-web/ URL.");
+    if (!/^https:\/\/(?:app|auth)\.heygen\.com\/magic-web\//.test(magicLink)) {
+      throw new LoginRequiredError("The magic link must be an https://app.heygen.com/magic-web/ or https://auth.heygen.com/magic-web/ URL.");
+    }
+    if (!pending) {
+      pending = createAuthorization(config);
+      pending.stage = "magic_link_sent";
+      writePrivate(config.pendingFile, pending);
     }
     await browser.open(magicLink);
-    await browser.wait(5000);
+    await browser.wait(6000);
     const landing = await browser.snapshot();
-    if (!/return to your original tab/i.test(landing)) {
-      throw new LoginRequiredError("The magic link was not accepted. It may be expired or already used; run login --email to request one new link.");
+    const landingUrl = await browser.currentUrl();
+    const authenticated = /^https:\/\/app\.heygen\.com\/(?:home|$)/.test(landingUrl)
+      || /return to your original tab|account menu/i.test(landing);
+    if (!authenticated) {
+      const expired = /expired|already used|invalid/i.test(landing);
+      throw new LoginRequiredError(
+        expired
+          ? "The magic link is expired or already used. Ask the user to request one new link; do not reuse the old link."
+          : "The magic link did not authenticate the sandbox browser. Ask the user to request one new link and copy the newest link address.",
+      );
     }
     pending = createAuthorization(config);
     pending.stage = "browser_authenticated";
     writePrivate(config.pendingFile, pending);
-    await browser.open(pending.authorizeUrl);
-    await browser.wait(3000);
-    const tokens = await finishAuthorization(browser, pending, config, null);
+    const tokens = await authorizeAndFinish(browser, pending, config, null);
     return { pending: false, tokenFile: config.tokenFile, expiresAt: tokens.expires_at };
   }
 
@@ -271,8 +355,6 @@ export async function login(config, { email, magicLink, plan } = {}) {
   pending = createAuthorization(config);
   pending.stage = plan ? "plan_required" : "browser_authenticated";
   writePrivate(config.pendingFile, pending);
-  await browser.open(pending.authorizeUrl);
-  await browser.wait(3000);
-  const tokens = await finishAuthorization(browser, pending, config, plan);
+  const tokens = await authorizeAndFinish(browser, pending, config, plan);
   return { pending: false, tokenFile: config.tokenFile, expiresAt: tokens.expires_at };
 }

@@ -2,8 +2,8 @@
 # Doctrine skill for the remote HeyGen MCP server (mcp.heygen.com/mcp/v1)
 
 name: heygen-mcp
-version: 0.3.0
-description: Operate HeyGen through a CLI or the remote MCP server (mcp.heygen.com/mcp/v1, bridged as mcp_heygen_* tools) with sandbox agent-browser OAuth (live login unverified) and verified doctrines for avatar, video, translate, voices, templates, brand kits, assets, batches, and account tools
+version: 0.3.2
+description: Operate HeyGen through a CLI or the remote MCP server (mcp.heygen.com/mcp/v1, bridged as mcp_heygen_* tools) with user-owned sandbox agent-browser OAuth and a temporary callback listener (built-in live re-run pending) plus verified doctrines for avatar, video, translate, voices, templates, brand kits, assets, batches, and account tools
 author:
   name: johnmak101-ops
   url: https://github.com/johnmak101-ops

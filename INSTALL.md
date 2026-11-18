@@ -70,10 +70,10 @@ bash /tmp/pave-setup/verify.sh
 下一步：登入要你自己做。
 1. oo — 打 /setup，或 oo login --team=<team>
 2. Composio — 打 /setup，或 composio login
-3. HeyGen（需要時）— 打 /setup；助理會先問你的 HeyGen 帳號 email
+3. HeyGen（需要時）— 打 /setup；助理會請你在自己的瀏覽器登入並取得 magic link
 ```
 
-不要從範例、舊對話或檔案猜 HeyGen email。
+不要在 sandbox 自動寄 HeyGen email，也不要嘗試繞過 Turnstile。不要把 email 或 magic link 寫入範例、舊對話或檔案。
 
 ## 5. 不要做的事
 

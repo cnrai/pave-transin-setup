@@ -1,28 +1,35 @@
 #!/usr/bin/env node
 import fs from "node:fs";
+import { formatDoctor, runDoctor } from "./doctor.mjs";
 import { connectMcp } from "./mcp-client.mjs";
 import { getAccessToken, getConfig, login, LoginRequiredError } from "./oauth.mjs";
 
-const HELP = `HeyGen MCP CLI — no local callback server required
+const HELP = `HeyGen MCP CLI — sandbox OAuth with a temporary callback listener
 
 Usage:
   heygen-mcp login --email <address>
   heygen-mcp login --magic-link < magic-link.txt
   heygen-mcp login --plan <free|creator|pro>
+  heygen-mcp login --resume
+  heygen-mcp doctor [--json]
   heygen-mcp tools [--json]
   heygen-mcp schema <tool>
   heygen-mcp call <tool> <json|@file|->
   heygen-mcp whoami
 
 Login runs a persistent, headed agent-browser session inside this machine or
-sandbox. It captures the loopback redirect URL; it never starts a callback
-listener. Complete CAPTCHAs manually if one appears. Never choose a paid plan
-without the user's explicit approval.
+sandbox. It captures the loopback redirect with a temporary listener; no callback
+listener runs on the user's machine. Complete CAPTCHAs manually if one appears. Never choose a paid plan
+without the user's explicit approval. After an agent-browser daemon error, use
+login --resume only when the sandbox browser is already on app.heygen.com/home.
 
 Environment overrides:
   HEYGEN_CONFIG_HOME       Token and pending-login directory
   HEYGEN_TOKEN_FILE        Token file path
   HEYGEN_AGENT_BROWSER     agent-browser executable path
+  HEYGEN_OAUTH_REDIRECT_URI  Loopback redirect URI captured from the browser
+  HEYGEN_AUTH_BASE_URL     OAuth authorization server base URL
+  HEYGEN_MCP_URL           MCP endpoint
 `;
 
 function usageError(message) {
@@ -43,6 +50,8 @@ function parseLogin(args) {
     } else if (arg === "--plan") {
       options.plan = args[++i];
       if (!options.plan) throw usageError("--plan requires free, creator, or pro");
+    } else if (arg === "--resume") {
+      options.resume = true;
     } else {
       throw usageError(`Unknown login option: ${arg}`);
     }
@@ -52,6 +61,9 @@ function parseLogin(args) {
   }
   if (options.plan && (options.email || options.magicLink)) {
     throw usageError("Use --plan only in a separate invocation after the plan picker appears");
+  }
+  if (options.resume && (options.email || options.magicLink || options.plan)) {
+    throw usageError("Use --resume by itself");
   }
   if (options.plan && !["free", "creator", "pro"].includes(options.plan)) {
     throw usageError("Plan must be one of: free, creator, pro");
@@ -105,6 +117,15 @@ async function main(argv) {
     const result = await login(config, options);
     if (result.pending) process.stdout.write(`${result.message}\n`);
     else process.stdout.write(`Login complete. Tokens stored in ${result.tokenFile}\n`);
+    return;
+  }
+  if (command === "doctor") {
+    if (args.length > 1 || (args.length === 1 && args[0] !== "--json")) {
+      throw usageError("Usage: heygen-mcp doctor [--json]");
+    }
+    const result = await runDoctor(config);
+    process.stdout.write(args[0] === "--json" ? `${JSON.stringify(result, null, 2)}\n` : formatDoctor(result));
+    if (!result.ok) process.exitCode = 1;
     return;
   }
   if (command === "tools") {
