@@ -296,5 +296,6 @@ Installer invariants:
 | A blocked network must fail fast, not hang | `preflight` probes once and `--no-network` skips remote installs |
 | `AGENTS.md` is never written without explicit consent | `install.sh` skips it unless `--agents <path>` is passed, and refuses paths inside the repo |
 | The report must match what happened | `install.sh` prints one summary row per component and exits 1 on failure |
+| No credential or personal email may be committed | `secret-scan.sh` fails on JWT, `Bearer`, API keys, and device `user_code` values |
 
 Never write a session token, API key, or cookie into a file, a commit, or the chat.

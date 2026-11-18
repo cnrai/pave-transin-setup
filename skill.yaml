@@ -1,5 +1,5 @@
 name: pave-transin-setup
-version: 1.1.0
+version: 1.2.0
 description: Bootstrap installer for the PAVE toolchain. Review the scripts, then run install.sh.
 author:
   name: PAVE

@@ -74,6 +74,18 @@ bash browser-install-status.sh
 `install.sh` 最後會印一張表，每個元件一行：`ok`、`skip`、`fail`、`plan`、`running`。
 有 `fail` 時 exit code 是 1。`verify.sh` 有 `MISS` 時也返回 1，兩者都可以直接用來判斷成敗。
 
+## 憑證檢查
+
+一條指令就掃出有沒有把 token 或個人 email 寫進 repo：
+
+```bash
+bash secret-scan.sh            # 現在的檔案
+bash secret-scan.sh --history  # 所有 commit
+```
+
+它會找 JWT、`Bearer`、GitHub token、API key，以及 `oo login` 那個 `user_code`。
+有 credential 就 exit 1；個人 email 只警告。
+
 ## 不會做什麼
 
 - 不替你登入。`oo` 和 `composio` 要本人授權，裝好之後打 `/setup`。要使用 HeyGen 時，`/setup` 會請你在自己的瀏覽器登入、完成人機驗證，再把 magic link 交給 sandbox。
@@ -90,6 +102,7 @@ install-browser-background.sh  背景安裝 Playwright + Chrome
 browser-install-status.sh      查背景安裝狀態
 browser-install-wait.sh        等背景安裝完成
 verify.sh     逐項檢查，印表
+secret-scan.sh 掃 credential 與個人 email
 INSTALL.md    給 agent 看的流程
 AGENTS.md     可選的全局規則樣板
 skills/       7 個 skill

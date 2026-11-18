@@ -90,3 +90,4 @@ required tool is missing. Installing is not the same as logging in.
 - Do not write `AGENTS.md` without the user's explicit consent.
 - `--no-browser` is only for an explicit user request.
 - Never automate a HeyGen email or CAPTCHA from a browser the user cannot see.
+- Before pushing, run `bash secret-scan.sh --history` and fix any finding.

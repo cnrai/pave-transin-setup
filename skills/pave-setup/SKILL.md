@@ -13,7 +13,9 @@ commands:
 ## 邊界
 
 - 不要問用戶拿密碼、token、API key。這些不可以出現在對話。
-- 可以顯示 device login URL。它是短期有效的，用完即失效。
+- `oo login` 印出的 device login URL 裡面有一次性的 code。它等同憑證。
+- 這條 URL 只顯示一次給用戶，用完即棄。不要寫進檔案、commit、log、筆記、`AGENTS.md`，也不要貼進截圖或報告。
+- 已經貼過一次就不要再重貼。要再說一次，重新執行 `oo login` 取新的。
 - 不要用 `oo auth web`。它是網站登入，不是 CLI 登入。
 - 不要自動執行 `/setup`。只有用戶打 `/setup`，或工具回報未登入時，才執行。
 - 不要在這一步做任何付費 action。
@@ -58,18 +60,20 @@ oo auth status
 oo login
 ```
 
-它會印出類似以下的 URL，然後停住等：
+它會印出一條網址，然後停住等。網址的格式是：
 
 ```
-https://console.oomol.com/login/device?user_code=XXXXXX
+https://console.oomol.com/login/device?user_code=<一次性 code>
 ```
+
+`<一次性 code>` 是這次登入專用的，不可以寫入任何檔案。
 
 做法：
 
 1. 等背景輸出出現 `login/device` 這一行。
-2. 把完整 URL 顯示給用戶，並說：「請在瀏覽器打開這條連結，完成登入。」
+2. 把完整 URL 顯示給用戶**一次**，並說：「請在瀏覽器打開這條連結，完成登入。」
 3. 等背景任務完成，或每 10 秒檢查一次 `oo auth status`，最多等 5 分鐘。
-4. 成功後說出帳號和預設團隊。
+4. 成功後說出帳號和預設團隊。不要重貼 URL，也不要記下 code。
 
 如果 20 秒內沒有出現 URL，顯示最後幾行輸出，停止，不要重試第二次。
 

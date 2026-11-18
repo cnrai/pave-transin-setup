@@ -174,5 +174,6 @@ Playwright + Chrome 的下載由背景子 session 監控；主對話先繼續。
 | `browser-install-status.sh` | 查詢背景瀏覽器安裝狀態與最近 log |
 | `browser-install-wait.sh` | 等到完成才返回，適合背景子 session |
 | `verify.sh` | 逐項檢查並印表 |
+| `secret-scan.sh` | 掃 credential 與個人 email；有 credential 就 exit 1 |
 | `AGENTS.md` | 可選的全局規則樣板；只在 `--agents` 時寫入 |
 | `skills/` | 7 個 skill，複製到 `~/.pave/skills/` |
