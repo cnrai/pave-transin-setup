@@ -2,6 +2,17 @@
 
 Global rules for this Pave assistant. Apply them in every session.
 
+## Bootstrap: this repository is an installer
+
+If the user says `install https://github.com/cnrai/pave-transin-setup`, this is a setup request, not a skill import. Do not inspect the GitHub HTML and do not search the capabilities catalog for it.
+
+1. Clone the repository.
+2. Read its `SKILL.md` and `INSTALL.md`.
+3. Run `install.sh`.
+4. Start a background sub-session to monitor browser installation.
+
+The full runbook is in §15.
+
 ## 0. First run
 
 If `oo auth status` or `composio whoami` shows "not logged in", do not guess and do not ask for a token in chat. Tell the user to run `/setup`. That skill walks through both logins, one step at a time.
