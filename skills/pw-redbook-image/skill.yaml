@@ -1,0 +1,16 @@
+name: pw-redbook-image
+version: 2.0.0
+description: "Xiaohongshu image-and-text creation: research, angle, style, page plan, copy, and images via oo Qwen. No publishing, no engagement."
+
+author:
+  name: PAVE
+license: MIT
+
+pattern: agent
+entrypoint: SKILL.md
+
+commands:
+  - name: redbook
+    description: Create a Xiaohongshu post package (copy + images) from a topic or article
+    args:
+      - <topic-or-url-or-file>

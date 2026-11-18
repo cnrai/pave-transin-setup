@@ -1,0 +1,11 @@
+name: seedance2-skill
+version: 1.0.0
+description: "Seedance 2.0 prompt reference in English and Chinese: input limits, @ reference syntax, camera language, and templates."
+
+author:
+  name: dexhunter
+  url: https://github.com/dexhunter/seedance2-skill
+license: MIT
+
+pattern: agent
+entrypoint: SKILL.md

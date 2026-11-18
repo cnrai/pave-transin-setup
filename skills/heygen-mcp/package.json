@@ -1,0 +1,16 @@
+{
+  "name": "openpave-heygen-mcp",
+  "version": "0.3.0",
+  "description": "CLI and doctrine for the HeyGen remote MCP server",
+  "type": "module",
+  "bin": {
+    "heygen-mcp": "cli/heygen-mcp.mjs"
+  },
+  "scripts": {
+    "check": "node --check cli/heygen-mcp.mjs && node --check cli/agent-browser.mjs && node --check cli/oauth.mjs && node --check cli/mcp-client.mjs"
+  },
+  "engines": {
+    "node": ">=18"
+  },
+  "license": "MIT"
+}

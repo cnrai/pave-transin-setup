@@ -1,0 +1,7 @@
+node_modules/
+*.log
+.tmp/
+.DS_Store
+dist/
+/magic-link.txt
+/heygen-tokens.json

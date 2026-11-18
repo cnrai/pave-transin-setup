@@ -1,0 +1,14 @@
+name: setup
+version: 1.0.0
+description: "First-run setup: check the CLIs, then log in to oo and Composio one step at a time."
+
+author:
+  name: PAVE
+license: MIT
+
+pattern: agent
+entrypoint: SKILL.md
+
+commands:
+  - name: setup
+    description: Check CLIs and complete oo / Composio login

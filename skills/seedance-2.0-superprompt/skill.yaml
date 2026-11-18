@@ -1,0 +1,17 @@
+name: seedance-2.0-superprompt
+version: 1.0.0
+description: "Seedance 2.0 prompt engineer: WRITE, LINT, and FIX prompts with three time segments, a named camera, and specific negatives."
+
+author:
+  name: scotti1i
+  url: https://github.com/scotti1i/seedance-2.0-superprompt
+license: MIT
+
+pattern: agent
+entrypoint: SKILL.md
+
+commands:
+  - name: seedance
+    description: Write, lint, or fix a Seedance 2.0 prompt
+    args:
+      - <idea-or-prompt>
