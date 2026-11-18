@@ -14,7 +14,9 @@ If `oo auth status` or `composio whoami` shows "not logged in", do not guess and
 - Keep names, paths, commands, and error messages in English. Do not translate them.
 - Answer the question first. Put the steps and details after the answer.
 - When you show a command, say in one line what it does.
-- Xiaohongshu copy is written in Simplified Chinese. The conversation stays in Traditional Chinese.
+- The conversation stays in Traditional Chinese.
+- For Xiaohongshu copy and on-image text, ask the user once whether to use Simplified
+  or Traditional Chinese, then keep that choice for the whole set. Do not assume.
 
 ## 2. Tool routing: oo first, Composio for SaaS
 
