@@ -26,7 +26,8 @@ bash /tmp/pave-setup/verify.sh
 | `composio` | `composio.dev/install --no-plugins` | 小 |
 | `officecli` | `d.officecli.ai/install.sh` | 小 |
 | `heygen-mcp` | 用 `skills/heygen-mcp/` 內的 package | 小 |
-| `agent-browser` | `npm i -g agent-browser` + Chromium | **約 300 MB，預設不裝** |
+| `agent-browser` | `npm i -g agent-browser` + 瀏覽器 | 背景安裝 |
+| Playwright + Chrome | `playwright` + Chrome/Chromium | 背景安裝 |
 | 7 個 skills | 本 repo `skills/` | 小 |
 | `AGENTS.md` | 本 repo 根目錄 | 小 |
 
@@ -34,11 +35,19 @@ bash /tmp/pave-setup/verify.sh
 
 ```bash
 bash install.sh --skills-only      # 只複製 skills 和 AGENTS.md
-bash install.sh --with-browser     # 連 Chromium 一齊裝
+bash install.sh --no-browser       # 不裝 Playwright、Chrome、agent-browser
 bash install.sh --no-apt           # 不呼叫 apt-get
 bash install.sh --force-skills     # 覆蓋已有的 skill
 bash install.sh --agents <path>    # 指定 AGENTS.md 位置
 ```
+
+Playwright、Chrome、Chromium 和 `agent-browser` 預設在背景安裝，`install.sh` 會立即返回。查進度：
+
+```bash
+bash browser-install-status.sh
+```
+
+`--with-browser` 仍可接受，但已不需要。
 
 ## 不會做什麼
 
@@ -50,6 +59,8 @@ bash install.sh --agents <path>    # 指定 AGENTS.md 位置
 
 ```
 install.sh    主安裝，可重複執行
+install-browser-background.sh  背景安裝 Playwright + Chrome
+browser-install-status.sh      查背景安裝狀態
 verify.sh     逐項檢查，印表
 INSTALL.md    給 agent 看的流程
 AGENTS.md     全局規則，寫入工作區根目錄

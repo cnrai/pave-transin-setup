@@ -19,28 +19,42 @@ git clone --depth 1 https://github.com/johnmak101-ops/pave-setup /tmp/pave-setup
 
 ## 2. 安裝
 
-先判斷要不要裝瀏覽器。
-
-- 用戶只說「install」→ **不要** 裝 `agent-browser`。它要下載約 300 MB 的 Chromium，屬大型依賴。
-- 用戶提到要上網、截圖、登入網頁、跑了 JS 的頁面 → 問一句，得到同意才加 `--with-browser`。
-
-```bash
-bash /tmp/pave-setup/install.sh
-```
-
-如果需要瀏覽器：
-
-```bash
-bash /tmp/pave-setup/install.sh --with-browser
-```
-
-`--agents` 要指向 **PAVE 的工作區根目錄**，不是 `/tmp`：
+瀏覽器安裝已改成 **背景執行**。`install.sh` 會強制啟動 Playwright + Chrome 安裝，但不等待下載完成。
 
 ```bash
 bash /tmp/pave-setup/install.sh --agents "/你的工作區/AGENTS.md"
 ```
 
-不確定工作區在哪，就用 `pwd` 的值。安裝腳本會自動備份舊的 `AGENTS.md` 成 `AGENTS.md.bak`。
+`--agents` 要指向 **PAVE 的工作區根目錄**，不是 `/tmp`。不確定工作區在哪，就用 `pwd` 的值。安裝腳本會自動備份舊的 `AGENTS.md` 成 `AGENTS.md.bak`。
+
+只在用戶明確說不要瀏覽器時才加：
+
+```bash
+bash /tmp/pave-setup/install.sh --no-browser
+```
+
+### 2.1 立刻開子 session 監控
+
+`install.sh` 返回後，主 session 要立即做兩件事：
+
+1. 告訴用戶：CLI 已處理，Playwright + Chrome 正在背景安裝。
+2. **開一個背景子 session 專門監控**，不要讓主對話等 npm 或 Chrome 下載。
+
+子 session 的責任：
+
+```bash
+bash /tmp/pave-setup/browser-install-status.sh
+```
+
+- 每 20-30 秒讀一次狀態。
+- `state=running` 或 `state=starting`：繼續等。
+- `state=done`：回報 Playwright + Chrome 完成。
+- `state=partial`：回報哪一個瀏覽器元件失敗。
+- `state=failed`：讀 `~/.pave/browser-install/install.log` 最後 40 行，回報真正錯誤。
+- 最多等 30 分鐘；不要無限重試。
+- 子 session 完成後把結果回給主 session，由主 session 向用戶總結。
+
+不要在主 session 同步等待這個背景工作。
 
 ## 3. 驗證
 
@@ -49,6 +63,7 @@ bash /tmp/pave-setup/verify.sh
 ```
 
 把輸出照實回報。**`MISS` 就是沒裝好，不要說裝好了。**
+瀏覽器若顯示 `WAIT`，代表背景安裝仍在進行，不是失敗。
 
 ## 4. 報告
 
@@ -63,9 +78,12 @@ bash /tmp/pave-setup/verify.sh
 | composio | OK |
 | officecli | OK |
 | heygen-mcp | OK |
-| agent-browser | 未裝（需要時再裝） |
+| agent-browser | OK / 背景安裝中 |
+| Playwright + Chrome | 背景安裝中 / OK / partial |
 | 7 個 skills | 全部 OK |
 | AGENTS.md | 已寫入 <路徑> |
+
+Playwright + Chrome 的下載由背景子 session 監控；主對話先繼續。
 
 下一步：登入要你自己做。
 1. oo — 打 /setup，或 oo login --team=<team>
@@ -80,7 +98,9 @@ bash /tmp/pave-setup/verify.sh
 - 不要把 token、session token、API key 寫進任何檔案、commit 或對話。
 - 不要替用戶登入。登入要本人開瀏覽器授權。
 - 不要把用戶的 email 寫入安裝檔、evidence、log 或 commit。需要時即場詢問。
-- 不要在安裝途中順手下載模型權重或 Chromium 以外的東西。
+- 不要在主 session 同步等待 Playwright、Chrome 或 agent-browser 下載。
+- 只允許背景安裝 Playwright、Chrome、Chromium 與 agent-browser；不要順手下載模型權重或其他大型依賴。
+- 背景安裝失敗時，把真正的 log 錯誤貼給用戶；不要假裝完成。
 - 不要改 `~/.pave/skills` 內已有的 skill，除非用戶加了 `--force-skills`。
 - 不要因為 `oo` 或 `composio` 沒登入就當安裝失敗。**裝好 ≠ 登入好**，分開講。
 
@@ -113,6 +133,8 @@ bash /tmp/pave-setup/verify.sh
 | 檔案 | 用途 |
 |---|---|
 | `install.sh` | 主安裝腳本，可重複執行 |
+| `install-browser-background.sh` | 背景安裝 Playwright、Chrome、Chromium、agent-browser |
+| `browser-install-status.sh` | 查詢背景瀏覽器安裝狀態與最近 log |
 | `verify.sh` | 逐項檢查並印表 |
 | `AGENTS.md` | PAVE 的全局規則，寫入工作區 |
 | `skills/` | 7 個 skill，複製到 `~/.pave/skills/` |

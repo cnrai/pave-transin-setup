@@ -3,8 +3,8 @@
 # Idempotent: every step is skipped when the tool is already present.
 set -euo pipefail
 
-WITH_BROWSER=0
 SKILLS_ONLY=0
+NO_BROWSER=0
 ALLOW_APT=1
 FORCE_SKILLS=0
 AGENTS_TARGET=""
@@ -14,7 +14,8 @@ usage() {
 usage: install.sh [options]
 
   --skills-only     copy skills and AGENTS.md only (no CLI download)
-  --with-browser    also install agent-browser and its Chromium deps (large download)
+  --no-browser      do not install Playwright, Chrome, or agent-browser
+  --with-browser    accepted for compatibility; browser install is now the default
   --no-apt          never call apt-get, even for browser deps
   --force-skills    overwrite skills that already exist
   --agents <path>   where to write AGENTS.md (default: the current directory)
@@ -28,7 +29,8 @@ EOF
 
 while [ $# -gt 0 ]; do
   case "$1" in
-    --with-browser) WITH_BROWSER=1 ;;
+    --with-browser) : ;;
+    --no-browser) NO_BROWSER=1 ;;
     --skills-only) SKILLS_ONLY=1 ;;
     --no-apt) ALLOW_APT=0 ;;
     --force-skills) FORCE_SKILLS=1 ;;
@@ -128,23 +130,30 @@ install_officecli() {
   have officecli && ok "installed" || { warn "officecli not on PATH yet (open a new shell)"; return 1; }
 }
 
-# ---------------------------------------------------------------- agent-browser
-install_browser() {
-  step "agent-browser"
-  if ! have npm; then warn "npm not found, skipping agent-browser"; return 0; fi
-  if have agent-browser; then ok "already: present"; else
-    npm install -g agent-browser >/dev/null 2>&1 || { warn "npm install agent-browser failed"; return 1; }
-    ok "installed"
-  fi
-  if [ "$ALLOW_APT" -eq 1 ]; then
-    if agent-browser install --with-deps >/dev/null 2>&1; then
-      ok "chromium ready"
-    else
-      warn "chromium deps need root: sudo apt-get install -y xvfb xfonts-base, then agent-browser install"
+# ---------------------------------------------------------------- browser
+start_browser_install() {
+  step "Playwright + Chrome (background)"
+  local state_dir="$PAVE_HOME/browser-install"
+  local status="$state_dir/status.txt"
+  local log="$state_dir/install.log"
+  local old_pid=""
+  mkdir -p "$state_dir"
+
+  if [ -f "$status" ]; then
+    old_pid="$(sed -n 's/^pid=//p' "$status" | head -1)"
+    if grep -qE '^state=(running|starting)$' "$status" && [ -n "$old_pid" ] && kill -0 "$old_pid" 2>/dev/null; then
+      ok "already running (pid $old_pid)"
+      printf '   status: bash %s/browser-install-status.sh\n' "$REPO_DIR"
+      return 0
     fi
-  else
-    warn "skipped apt (--no-apt); run: agent-browser install --with-deps"
   fi
+
+  printf 'state=starting\nphase=launching\nstarted=%s\nlog=%s\n' \
+    "$(date -u +%Y-%m-%dT%H:%M:%SZ)" "$log" > "$status"
+  PAVE_HOME="$PAVE_HOME" ALLOW_APT="$ALLOW_APT" \
+    nohup bash "$REPO_DIR/install-browser-background.sh" >"$state_dir/launcher.log" 2>&1 &
+  ok "started in background"
+  printf '   status: bash %s/browser-install-status.sh\n' "$REPO_DIR"
 }
 
 # ---------------------------------------------------------------- heygen-mcp
@@ -174,10 +183,10 @@ if [ "$SKILLS_ONLY" -ne 1 ]; then
   install_composio || failures=$((failures + 1))
   install_officecli || failures=$((failures + 1))
   install_heygen || failures=$((failures + 1))
-  if [ "$WITH_BROWSER" -eq 1 ]; then
-    install_browser || failures=$((failures + 1))
+  if [ "$NO_BROWSER" -eq 1 ]; then
+    printf '\n== Playwright + Chrome\n   - skipped (--no-browser)\n'
   else
-    printf '\n== agent-browser\n   - skipped (pass --with-browser to install: about 300 MB)\n'
+    start_browser_install
   fi
   if [ "$failures" -gt 0 ]; then
     printf '\n%s step(s) failed. See the lines marked ! above.\n' "$failures" >&2
@@ -186,3 +195,6 @@ if [ "$SKILLS_ONLY" -ne 1 ]; then
 fi
 
 printf '\nDone. Next: bash %s/verify.sh\n' "$REPO_DIR"
+if [ "$SKILLS_ONLY" -ne 1 ] && [ "$NO_BROWSER" -ne 1 ]; then
+  printf 'Browser install continues in background. Monitor: bash %s/browser-install-status.sh\n' "$REPO_DIR"
+fi

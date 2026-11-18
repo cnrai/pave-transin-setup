@@ -43,6 +43,26 @@ has node       && row  "node"       node --version       || miss "node" "missing
 has git        && row  "git"        git --version        || miss "git" "missing"
 
 echo
+echo "Browser install (background)"
+BROWSER_STATUS="$PAVE_HOME/browser-install/status.txt"
+if [ -f "$BROWSER_STATUS" ]; then
+  bstate="$(sed -n 's/^state=//p' "$BROWSER_STATUS" | head -1)"
+  bphase="$(sed -n 's/^phase=//p' "$BROWSER_STATUS" | head -1)"
+  case "$bstate" in
+    running|starting)
+      printf '  WAIT  %-16s phase=%s\n' "browser" "$bphase" ;;
+    done)
+      printf '  OK    %-16s Playwright + Chrome\n' "browser" ;;
+    partial)
+      printf '  PART  %-16s some browser components failed\n' "browser" ;;
+    *)
+      printf '  MISS  %-16s state=%s\n' "browser" "$bstate" ;;
+  esac
+else
+  skip "browser" "no background status"
+fi
+
+echo
 echo "Skills  ($PAVE_HOME/skills)"
 expected="agent-browser heygen-mcp officecli pave-setup pw-redbook-image seedance-2.0-superprompt seedance2-skill"
 for name in $expected; do
