@@ -97,7 +97,9 @@ const server = http.createServer(async (req, res) => {
 
   const blob = JSON.stringify({ access: tok.access_token, refresh: tok.refresh_token || null }, null, 2);
   fs.writeFileSync(OUT, blob + '\n', { mode: 0o600 });
-  console.log('\nTOKENS (also in ' + OUT + '):\n' + blob);
+  console.log('\nTokens written to ' + OUT + ' (mode 0600).');
+  res.setHeader('Cache-Control', 'no-store');
+  res.setHeader('Referrer-Policy', 'no-referrer');
   res.end(page('HeyGen tokens ready', `<h2>HeyGen tokens ready</h2>
 <p>Access token expires in ${tok.expires_in}s. Paste the JSON below into your PAVE session chat (or store it yourself).</p>
 <pre id="blob">${blob.replace(/&/g, '&amp;').replace(/</g, '&lt;')}</pre>

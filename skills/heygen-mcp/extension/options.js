@@ -9,14 +9,27 @@ chrome.storage.local.get(['origin', 'token'], (r) => {
 });
 
 $('save').addEventListener('click', async () => {
-  const origin = $('origin').value.trim().replace(/\/+$/, '');
+  const originInput = $('origin').value.trim().replace(/\/+$/, '');
   const token = $('token').value.trim();
   const status = $('status');
 
-  if (!origin || !/^https?:\/\//.test(origin)) {
+  let parsed;
+  try {
+    parsed = new URL(originInput);
+  } catch {
     status.textContent = 'Enter a valid origin starting with http:// or https://';
     return;
   }
+  const loopback = ['127.0.0.1', 'localhost', '[::1]'].includes(parsed.hostname);
+  if (!['http:', 'https:'].includes(parsed.protocol)) {
+    status.textContent = 'Only http:// loopback or https:// origins are allowed';
+    return;
+  }
+  if (parsed.protocol === 'http:' && !loopback) {
+    status.textContent = 'Non-loopback PAVE origins must use https://';
+    return;
+  }
+  const origin = parsed.origin;
 
   await chrome.storage.local.set({ origin, token });
 

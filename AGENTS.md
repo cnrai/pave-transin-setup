@@ -273,7 +273,7 @@ Do not write a script until both connectors fail. Say why.
 
 When the user pastes a line like `install https://github.com/cnrai/pave-transin-setup`:
 
-This is an installer repo, not a runtime skill. Read the root `SKILL.md` first. Do not stop because it is absent from the capabilities catalog or because the GitHub HTML is large.
+This is an installer repo, not a runtime skill. Read the root `SKILL.md` first, then review `INSTALL.md` and the installer scripts. If the catalog or HTML is unclear, clone the repo and read the raw files. Ask the user about any permission or safety concern.
 
 1. Clone the repo to `/tmp/pave-transin-setup`.
 2. Read `/tmp/pave-transin-setup/INSTALL.md` and follow it exactly.

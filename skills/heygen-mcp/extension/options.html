@@ -15,7 +15,8 @@ button{margin-top:1rem;font-size:1rem;padding:.5rem 1rem;cursor:pointer}
 <body>
 <h1>PAVE Connect</h1>
 <p class="note">Point the extension at the PAVE server whose WebUI you use. The
-relay posts code+state with your WebUI session cookie.</p>
+relay posts code+state with your WebUI session cookie. Non-loopback origins
+must use https.</p>
 
 <label for="origin">PAVE origin (e.g. https://pave.example.com)</label>
 <input id="origin" placeholder="https://…" autocomplete="url">

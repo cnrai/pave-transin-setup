@@ -73,8 +73,12 @@ HeyGen authorize URL, and watch the mock receive the relay POST.
 
 ## Security notes for review
 
-- The extension forwards only `code` + `state` + the callback URL — never
-  tokens, never cookies.
+- The extension forwards only `code` + `state` + the callback URL in the relay
+  body — never access/refresh tokens or cookies. If an optional bearer token is
+  configured, it is sent only to the configured PAVE origin as an Authorization
+  header.
+- Non-loopback relay origins must use HTTPS. Loopback HTTP is allowed for local
+  development.
 - Relay auth rides the PAVE WebUI session cookie (`credentials: 'include'`),
   so the endpoint must enforce CSRF (custom header check + SameSite) — see the
   endpoint spec.

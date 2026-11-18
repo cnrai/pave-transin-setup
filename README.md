@@ -2,7 +2,7 @@
 
 把 PAVE 助理的工具鏈一次裝好。給 sandbox 用，任何人都可以重跑。
 
-> **給 agent：** 這個 repo 是 installer，不是要匯入的 runtime skill。看到 `install https://github.com/cnrai/pave-transin-setup` 時，請直接 clone、閱讀 `INSTALL.md`、執行 `install.sh`。不要停在 GitHub HTML 或 capabilities catalog 判斷。入口在根目錄 `SKILL.md`。
+> **給 agent：** 這個 repo 是 installer。入口在根目錄 `SKILL.md`；可先讀 `INSTALL.md` 和相關腳本。遇到權限、網絡或安全疑問時先問用戶，不要盲目執行。
 
 ## 用法
 

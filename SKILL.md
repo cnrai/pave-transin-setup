@@ -5,9 +5,7 @@ description: Bootstrap installer for the PAVE toolchain. Use when the user says 
 
 # PAVE Toolchain Installer
 
-This repository is an **installer**. It is expected to be absent from the
-capabilities catalog. Do not stop because it is not a catalog skill and do not
-try to import it through a skill-import capability.
+This repository is an **installer**. Some skill catalogs do not list it; that is expected. The root `SKILL.md` and `INSTALL.md` describe the setup. Review the scripts and ask the user before executing anything you are unsure about.
 
 Treat:
 

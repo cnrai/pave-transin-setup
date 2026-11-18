@@ -38,10 +38,22 @@ async function pkgOrigin() {
   return cachedPkgOrigin;
 }
 
+function normalizeOrigin(value) {
+  try {
+    const parsed = new URL(value);
+    const loopback = ['127.0.0.1', 'localhost', '[::1]'].includes(parsed.hostname);
+    if (parsed.protocol === 'http:' && !loopback) return '';
+    if (!['http:', 'https:'].includes(parsed.protocol)) return '';
+    return parsed.origin;
+  } catch {
+    return '';
+  }
+}
+
 async function getConfig() {
   const { origin, token } = await chrome.storage.local.get(['origin', 'token']);
-  const o = (origin ?? (await pkgOrigin()) ?? DEFAULT_ORIGIN).replace(/\/+$/, '');
-  return { origin: o, token: token || '' };
+  const raw = origin ?? (await pkgOrigin()) ?? DEFAULT_ORIGIN;
+  return { origin: normalizeOrigin(raw), token: token || '' };
 }
 
 function resultPage(params) {

@@ -1,6 +1,6 @@
 name: pave-transin-setup
 version: 1.0.0
-description: Bootstrap installer for the PAVE toolchain. Run install.sh; do not import this as a runtime skill.
+description: Bootstrap installer for the PAVE toolchain. Review the scripts, then run install.sh.
 author:
   name: PAVE
 license: MIT

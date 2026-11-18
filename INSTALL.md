@@ -6,9 +6,9 @@
 install https://github.com/cnrai/pave-transin-setup
 ```
 
-意思是：**在這個 sandbox 裝好 PAVE 的工具鏈，然後報告**。請照下面做，不要先問問題。
+意思是：在這個 sandbox 安裝 PAVE 工具鏈，然後報告。以下是建議步驟；請先閱讀腳本，遇到權限、網絡或安全疑問時先問用戶，不要盲目執行。
 
-這個 repo 是 installer，不是 runtime skill。不要因為它不在 capabilities catalog，或因為 GitHub HTML 很大，就停下來；根目錄 `SKILL.md` 是 agent 入口。
+這個 repo 是 installer，不是 runtime skill。若 catalog 不認得它，可以從根目錄 `SKILL.md` 開始；若 GitHub HTML 太大，直接改讀 raw `INSTALL.md` 或 clone。
 
 ## 1. 取得 repo
 
