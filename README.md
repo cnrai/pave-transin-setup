@@ -2,6 +2,8 @@
 
 把 PAVE 助理的工具鏈一次裝好。給 sandbox 用，任何人都可以重跑。
 
+> **給 agent：** 這個 repo 是 installer，不是要匯入的 runtime skill。看到 `install https://github.com/cnrai/pave-transin-setup` 時，請直接 clone、閱讀 `INSTALL.md`、執行 `install.sh`。不要停在 GitHub HTML 或 capabilities catalog 判斷。入口在根目錄 `SKILL.md`。
+
 ## 用法
 
 在 PAVE 對話貼這一行：
@@ -13,9 +15,9 @@ install https://github.com/cnrai/pave-transin-setup
 agent 會 clone、安裝、驗證，然後用表格報告。要自己跑也可以：
 
 ```bash
-git clone --depth 1 https://github.com/cnrai/pave-transin-setup /tmp/pave-setup
-bash /tmp/pave-setup/install.sh --agents "$PWD/AGENTS.md"
-bash /tmp/pave-setup/verify.sh
+git clone --depth 1 https://github.com/cnrai/pave-transin-setup /tmp/pave-transin-setup
+bash /tmp/pave-transin-setup/install.sh --agents "$PWD/AGENTS.md"
+bash /tmp/pave-transin-setup/verify.sh
 ```
 
 ## 會裝什麼
@@ -58,6 +60,8 @@ bash browser-install-status.sh
 ## 目錄
 
 ```
+SKILL.md      agent 入口：說明這是 installer
+skill.yaml    installer manifest
 install.sh    主安裝，可重複執行
 install-browser-background.sh  背景安裝 Playwright + Chrome
 browser-install-status.sh      查背景安裝狀態

@@ -8,21 +8,23 @@ install https://github.com/cnrai/pave-transin-setup
 
 意思是：**在這個 sandbox 裝好 PAVE 的工具鏈，然後報告**。請照下面做，不要先問問題。
 
+這個 repo 是 installer，不是 runtime skill。不要因為它不在 capabilities catalog，或因為 GitHub HTML 很大，就停下來；根目錄 `SKILL.md` 是 agent 入口。
+
 ## 1. 取得 repo
 
 ```bash
-rm -rf /tmp/pave-setup
-git clone --depth 1 https://github.com/cnrai/pave-transin-setup /tmp/pave-setup
+rm -rf /tmp/pave-transin-setup
+git clone --depth 1 https://github.com/cnrai/pave-transin-setup /tmp/pave-transin-setup
 ```
 
-如果 `git` 不可用，退而用 curl 下載 zip，解壓到 `/tmp/pave-setup`。
+如果 `git` 不可用，退而用 curl 下載 zip，解壓到 `/tmp/pave-transin-setup`。
 
 ## 2. 安裝
 
 瀏覽器安裝已改成 **背景執行**。`install.sh` 會強制啟動 Playwright + Chrome 安裝，但不等待下載完成。
 
 ```bash
-bash /tmp/pave-setup/install.sh --agents "/你的工作區/AGENTS.md"
+bash /tmp/pave-transin-setup/install.sh --agents "/你的工作區/AGENTS.md"
 ```
 
 `--agents` 要指向 **PAVE 的工作區根目錄**，不是 `/tmp`。不確定工作區在哪，就用 `pwd` 的值。安裝腳本會自動備份舊的 `AGENTS.md` 成 `AGENTS.md.bak`。
@@ -30,7 +32,7 @@ bash /tmp/pave-setup/install.sh --agents "/你的工作區/AGENTS.md"
 只在用戶明確說不要瀏覽器時才加：
 
 ```bash
-bash /tmp/pave-setup/install.sh --no-browser
+bash /tmp/pave-transin-setup/install.sh --no-browser
 ```
 
 ### 2.1 立刻開子 session 監控
@@ -43,7 +45,7 @@ bash /tmp/pave-setup/install.sh --no-browser
 子 session 的責任是執行一個會「完成就立即返回」的等待器，不要用固定時間 timer：
 
 ```bash
-bash /tmp/pave-setup/browser-install-wait.sh
+bash /tmp/pave-transin-setup/browser-install-wait.sh
 ```
 
 - `state=done`：回報 Playwright + Chrome 完成。
@@ -55,7 +57,7 @@ bash /tmp/pave-setup/browser-install-wait.sh
 需要即時查看時才執行：
 
 ```bash
-bash /tmp/pave-setup/browser-install-status.sh
+bash /tmp/pave-transin-setup/browser-install-status.sh
 ```
 
 不要在主 session 同步等待這個背景工作。
@@ -64,7 +66,7 @@ bash /tmp/pave-setup/browser-install-status.sh
 ## 3. 驗證
 
 ```bash
-bash /tmp/pave-setup/verify.sh
+bash /tmp/pave-transin-setup/verify.sh
 ```
 
 把輸出照實回報。**`MISS` 就是沒裝好，不要說裝好了。**

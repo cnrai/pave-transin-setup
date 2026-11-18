@@ -273,11 +273,13 @@ Do not write a script until both connectors fail. Say why.
 
 When the user pastes a line like `install https://github.com/cnrai/pave-transin-setup`:
 
-1. Clone the repo to `/tmp/pave-setup`.
-2. Read `/tmp/pave-setup/INSTALL.md` and follow it exactly.
+This is an installer repo, not a runtime skill. Read the root `SKILL.md` first. Do not stop because it is absent from the capabilities catalog or because the GitHub HTML is large.
+
+1. Clone the repo to `/tmp/pave-transin-setup`.
+2. Read `/tmp/pave-transin-setup/INSTALL.md` and follow it exactly.
 3. `install.sh` starts Playwright, Chrome, Chromium, and `agent-browser` installation in the background by default. Do not wait for it in the main session. `--no-browser` is only for an explicit user request.
-4. Immediately start a background monitoring sub-session. It should run `bash /tmp/pave-setup/browser-install-wait.sh`, which returns as soon as the state is `done`, `partial`, or `failed`; report the real result. Do not busy-wait or use a fixed timer in the main session.
-5. Run `/tmp/pave-setup/verify.sh` and report the real output. `WAIT` means the background browser install is still running, not a failure. A `MISS` line is not a success.
+4. Immediately start a background monitoring sub-session. It should run `bash /tmp/pave-transin-setup/browser-install-wait.sh`, which returns as soon as the state is `done`, `partial`, or `failed`; report the real result. Do not busy-wait or use a fixed timer in the main session.
+5. Run `/tmp/pave-transin-setup/verify.sh` and report the real output. `WAIT` means the background browser install is still running, not a failure. A `MISS` line is not a success.
 6. Say plainly that installing is not logging in. The logins are the user's job: `/setup`.
 7. Never start the sandbox-side HeyGen email flow when the user cannot see the browser. Use the user-owned magic-link flow.
 

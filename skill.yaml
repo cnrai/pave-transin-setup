@@ -1,0 +1,11 @@
+name: pave-transin-setup
+version: 1.0.0
+description: Bootstrap installer for the PAVE toolchain. Run install.sh; do not import this as a runtime skill.
+author:
+  name: PAVE
+license: MIT
+pattern: agent
+entrypoint: SKILL.md
+commands:
+  - name: install
+    description: Clone, install, verify, and monitor the PAVE toolchain
