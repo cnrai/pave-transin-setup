@@ -63,7 +63,6 @@ bash browser-install-status.sh
 ```
 SKILL.md      agent 入口：說明這是 installer
 skill.yaml    installer manifest
-llms.txt      給 agent 的最短安裝指示
 install.sh    主安裝，可重複執行
 install-browser-background.sh  背景安裝 Playwright + Chrome
 browser-install-status.sh      查背景安裝狀態
