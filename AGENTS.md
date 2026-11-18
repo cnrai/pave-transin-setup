@@ -277,11 +277,14 @@ This is an installer repo, not a runtime skill. Read the root `SKILL.md` first, 
 
 1. Clone the repo to `/tmp/pave-transin-setup`.
 2. Read `/tmp/pave-transin-setup/INSTALL.md` and follow it exactly.
-3. `install.sh` starts Playwright, Chrome, Chromium, and `agent-browser` installation in the background by default. Do not wait for it in the main session. `--no-browser` is only for an explicit user request. If the Bash sandbox blocks network or apt, use `--no-network` and report which CLIs are missing; do not retry a timed-out command.
-4. Immediately start a background monitoring sub-session. It should run `bash /tmp/pave-transin-setup/browser-install-wait.sh`, which returns as soon as the state is `done`, `partial`, or `failed`; report the real result. Do not busy-wait or use a fixed timer in the main session.
-5. Run `/tmp/pave-transin-setup/verify.sh` and report the real output. `WAIT` means the background browser install is still running, not a failure. A `MISS` line is not a success.
-6. Say plainly that installing is not logging in. The logins are the user's job: `/setup`.
-7. Never start the sandbox-side HeyGen email flow when the user cannot see the browser. Use the user-owned magic-link flow.
+3. Run `install.sh --dry-run` first and show the user the plan.
+4. `install.sh` starts Playwright, Chrome, Chromium, and `agent-browser` installation in the background by default. Do not wait for it in the main session. `--no-browser` is only for an explicit user request. If the Bash sandbox blocks network or apt, use `--no-network` and report which CLIs are missing; do not retry a timed-out command.
+5. Do not pass `--agents` on your own. Show the user `install.sh --print-agents` first and write `AGENTS.md` only after they agree; it replaces the global rules below for every future session.
+6. Immediately start a background monitoring sub-session. It should run `bash /tmp/pave-transin-setup/browser-install-wait.sh`, which returns as soon as the state is `done`, `partial`, or `failed`; report the real result. Do not busy-wait or use a fixed timer in the main session.
+7. Run `/tmp/pave-transin-setup/verify.sh` and report the real output. `WAIT` means the background browser install is still running, not a failure. `SKIP` means it was deliberately skipped. A `MISS` line is not a success, and `verify.sh` exits 1 when any `MISS` is present.
+8. Report the summary table `install.sh` prints, as-is. Do not rewrite a `fail` or `skip` into a success.
+9. Say plainly that installing is not logging in. The logins are the user's job: `/setup`.
+10. Never start the sandbox-side HeyGen email flow when the user cannot see the browser. Use the user-owned magic-link flow.
 
 Installer invariants:
 
@@ -291,5 +294,7 @@ Installer invariants:
 | Every global npm install goes under `~/.npm-global` | `NPM_CONFIG_PREFIX` is exported by `install.sh` and inherited by the background installer |
 | Browser completion must not wait on a fixed timer | `browser-install-wait.sh` exits immediately on `done`, `partial`, or `failed` |
 | A blocked network must fail fast, not hang | `preflight` probes once and `--no-network` skips remote installs |
+| `AGENTS.md` is never written without explicit consent | `install.sh` skips it unless `--agents <path>` is passed, and refuses paths inside the repo |
+| The report must match what happened | `install.sh` prints one summary row per component and exits 1 on failure |
 
 Never write a session token, API key, or cookie into a file, a commit, or the chat.

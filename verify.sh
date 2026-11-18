@@ -10,11 +10,15 @@ fail=0
 
 row() { # row <label> <command...>
   local label="$1"; shift
-  if "$@" >/dev/null 2>&1; then
-    printf '  OK    %-16s %s\n' "$label" "$( "$@" 2>&1 | head -1 )"
+  local out status first
+  out="$("$@" 2>&1)"; status=$?
+  first="$(printf '%s\n' "$out" | head -1)"
+  if [ "$status" -eq 0 ]; then
+    printf '  OK    %-16s %s\n' "$label" "$first"
     pass=$((pass + 1))
   else
-    miss "$label" "command failed"
+    printf '  MISS  %-16s %s\n' "$label" "${first:-command failed}"
+    fail=$((fail + 1))
   fi
 }
 
@@ -29,18 +33,38 @@ skip() {
 
 has() { command -v "$1" >/dev/null 2>&1; }
 
+check() { # check <label> <command...>
+  local label="$1"; shift
+  if has "$1"; then row "$label" "$@"; else miss "$label" "not on PATH"; fi
+}
+
 echo "pave-setup verify  home=$HOME"
 echo
 
 echo "CLI"
-has oo         && row  "oo"         oo --version         || miss "oo" "not on PATH"
-has composio   && row  "composio"   composio --version   || miss "composio" "not on PATH"
-has officecli  && row  "officecli"  officecli --version  || miss "officecli" "not on PATH"
-has agent-browser && row "agent-browser" agent-browser --version || skip "agent-browser" "optional, not installed"
-has heygen-mcp && row  "heygen-mcp" heygen-mcp --help    || miss "heygen-mcp" "not on PATH"
-has pdftoppm   && row  "pdftoppm"   pdftoppm -v          || miss "pdftoppm" "poppler-utils missing"
-has node       && row  "node"       node --version       || miss "node" "missing"
-has git        && row  "git"        git --version        || miss "git" "missing"
+check "oo"         oo --version
+check "composio"   composio --version
+check "officecli"  officecli --version
+check "heygen-mcp" heygen-mcp --help
+if has agent-browser; then
+  row "agent-browser" agent-browser --version
+else
+  skip "agent-browser" "optional, not installed"
+fi
+
+echo
+echo "System"
+check "node"     node --version
+check "git"      git --version
+check "curl"     curl --version
+check "unzip"    unzip -v
+check "pdftoppm" pdftoppm -v
+if has xvfb-run; then
+  printf '  OK    %-16s %s\n' "xvfb-run" "$(command -v xvfb-run)"
+  pass=$((pass + 1))
+else
+  skip "xvfb-run" "no X server; apt-get install -y xvfb"
+fi
 
 echo
 echo "Browser install (background)"
@@ -80,7 +104,7 @@ echo "AGENTS.md"
 if [ -f "$PWD/AGENTS.md" ]; then
   printf '  OK    %s (%s lines)\n' "$PWD/AGENTS.md" "$(wc -l < "$PWD/AGENTS.md" | tr -d ' ')"
 else
-  printf '  MISS  no AGENTS.md in %s\n' "$PWD"
+  skip "AGENTS.md" "opt-in; use install.sh --agents <path>"
 fi
 
 echo
@@ -90,4 +114,4 @@ printf '  composio  : %s\n' "$(composio whoami 2>&1 | head -1 || echo 'unknown')
 
 echo
 printf 'summary: %s ok, %s missing\n' "$pass" "$fail"
-exit 0
+[ "$fail" -eq 0 ] || exit 1

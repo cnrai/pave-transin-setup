@@ -21,13 +21,30 @@ git clone --depth 1 https://github.com/cnrai/pave-transin-setup /tmp/pave-transi
 
 ## 2. 安裝
 
-瀏覽器安裝已改成 **背景執行**。`install.sh` 會強制啟動 Playwright + Chrome 安裝，但不等待下載完成。
+先看一次會做什麼。`--dry-run` 不會改任何檔案、不會裝任何東西：
+
+```bash
+bash /tmp/pave-transin-setup/install.sh --dry-run
+```
+
+再真的安裝。瀏覽器安裝已改成 **背景執行**：`install.sh` 會啟動 Playwright + Chrome 安裝，但不等待下載完成。
+
+```bash
+bash /tmp/pave-transin-setup/install.sh
+```
+
+**預設不會寫 `AGENTS.md`。** 它會改掉所有未來 session 的全局規則，所以要由用戶決定。流程：
+
+1. 先給用戶看內容：`bash /tmp/pave-transin-setup/install.sh --print-agents`
+2. 用戶同意後才寫：
 
 ```bash
 bash /tmp/pave-transin-setup/install.sh --agents "/你的工作區/AGENTS.md"
 ```
 
-`--agents` 要指向 **PAVE 的工作區根目錄**，不是 `/tmp`。不確定工作區在哪，就用 `pwd` 的值。安裝腳本會自動備份舊的 `AGENTS.md` 成 `AGENTS.md.bak`。
+`--agents` 要指向 **PAVE 的工作區根目錄**，不是 `/tmp`，也不是 repo 內。不確定工作區在哪，就用 `pwd` 的值。腳本會自動備份舊的 `AGENTS.md` 成 `AGENTS.md.bak`，並拒絕寫進 repo 目錄。
+
+`install.sh` 最後會印一張 summary 表（`ok` / `skip` / `fail` / `plan` / `running`）。有 `fail` 時 exit code 是 1；把表照實轉貼，不要自己改寫。
 
 只在用戶明確說不要瀏覽器時才加：
 
@@ -77,8 +94,8 @@ bash /tmp/pave-transin-setup/browser-install-status.sh
 bash /tmp/pave-transin-setup/verify.sh
 ```
 
-把輸出照實回報。**`MISS` 就是沒裝好，不要說裝好了。**
-瀏覽器若顯示 `WAIT`，代表背景安裝仍在進行，不是失敗。
+把輸出照實回報。**`MISS` 就是沒裝好，不要說裝好了。**`verify.sh` 有 `MISS` 時 exit code 是 1。
+瀏覽器若顯示 `WAIT`，代表背景安裝仍在進行，不是失敗；`SKIP` 是刻意跳過，例如 `--no-browser` 或還沒寫入 `AGENTS.md`。
 
 ## 4. 報告
 
@@ -96,7 +113,7 @@ bash /tmp/pave-transin-setup/verify.sh
 | agent-browser | OK / 背景安裝中 |
 | Playwright + Chrome | 背景安裝中 / OK / partial |
 | 7 個 skills | 全部 OK |
-| AGENTS.md | 已寫入 <路徑> |
+| AGENTS.md | 未寫入（opt-in，等用戶決定） / 已寫入 <路徑> |
 
 Playwright + Chrome 的下載由背景子 session 監控；主對話先繼續。
 
@@ -112,6 +129,7 @@ Playwright + Chrome 的下載由背景子 session 監控；主對話先繼續。
 
 - 不要把 token、session token、API key 寫進任何檔案、commit 或對話。
 - 不要替用戶登入。登入要本人開瀏覽器授權。
+- 不要在用戶未同意前寫 `AGENTS.md`。它會覆蓋所有未來 session 的規則；先 `--print-agents` 給用戶看。
 - 不要把用戶的 email 寫入安裝檔、evidence、log 或 commit。需要時即場詢問。
 - 不要在主 session 同步等待 Playwright、Chrome 或 agent-browser 下載。
 - 只允許背景安裝 Playwright、Chrome、Chromium 與 agent-browser；不要順手下載模型權重或其他大型依賴。
@@ -143,7 +161,9 @@ Playwright + Chrome 的下載由背景子 session 監控；主對話先繼續。
 | apt 要 root | 跳過瀏覽器，改用 curl；或請用戶在宿主機裝 `xvfb`、`xfonts-base` |
 | Bash sandbox 限制 network/apt | 不要重試長命令；改用 `--no-network`，回報哪些 CLI 缺 |
 | `install.sh` 45 秒 timeout | 檢查 `~/.pave/browser-install/status.txt`；不要假設安裝完成 |
-| 安裝腳本 exit 1 | 把 `!` 開頭的行原文貼給用戶，不要摘要成「失敗了」 |
+| 安裝腳本 exit 1 | 把 summary 表和 `!` 開頭的行原文貼給用戶，不要摘要成「失敗了」 |
+| `verify.sh` exit 1 | 至少一個 `MISS`；逐項對照，不要把 `SKIP` 當成失敗 |
+| `xvfb-run` 缺失 | 背景安裝會嘗試 `sudo -n apt-get install -y xvfb`；沒有 root 時先跳過，改用 curl 或請用戶在宿主機裝 |
 
 ## 8. 檔案說明
 
@@ -154,5 +174,5 @@ Playwright + Chrome 的下載由背景子 session 監控；主對話先繼續。
 | `browser-install-status.sh` | 查詢背景瀏覽器安裝狀態與最近 log |
 | `browser-install-wait.sh` | 等到完成才返回，適合背景子 session |
 | `verify.sh` | 逐項檢查並印表 |
-| `AGENTS.md` | PAVE 的全局規則，寫入工作區 |
+| `AGENTS.md` | 可選的全局規則樣板；只在 `--agents` 時寫入 |
 | `skills/` | 7 個 skill，複製到 `~/.pave/skills/` |

@@ -20,8 +20,10 @@ as: clone this repository, inspect its installer, run it, and report the result.
 - `oo`, `composio`, and `officecli`
 - the `heygen-mcp` CLI
 - seven skills under `skills/`
-- `AGENTS.md` in the workspace
 - Playwright, Chrome, Chromium, and `agent-browser` in the background
+
+`AGENTS.md` is opt-in: it is written only when you pass `--agents <path>`, and
+only after the user has seen its contents.
 
 It does not log in to any account. The user performs logins later through
 `/setup`.
@@ -32,6 +34,18 @@ It does not log in to any account. The user performs logins later through
 rm -rf /tmp/pave-transin-setup
 git clone --depth 1 https://github.com/cnrai/pave-transin-setup /tmp/pave-transin-setup
 less /tmp/pave-transin-setup/INSTALL.md
+bash /tmp/pave-transin-setup/install.sh --dry-run   # what would happen
+bash /tmp/pave-transin-setup/install.sh             # do it
+```
+
+`install.sh` prints a summary table at the end (`ok` / `skip` / `fail` /
+`plan` / `running`) and exits 1 when a step failed. Report that table as-is.
+
+Writing `AGENTS.md` rewrites the global rules for every future session. Only do
+it on request, and show the content first:
+
+```bash
+bash /tmp/pave-transin-setup/install.sh --print-agents
 bash /tmp/pave-transin-setup/install.sh --agents "$PWD/AGENTS.md"
 ```
 
@@ -73,5 +87,6 @@ required tool is missing. Installing is not the same as logging in.
 - Review `install.sh`, `INSTALL.md`, and the two browser-install scripts before
   running them.
 - Do not ask for or store passwords, tokens, cookies, or API keys.
+- Do not write `AGENTS.md` without the user's explicit consent.
 - `--no-browser` is only for an explicit user request.
 - Never automate a HeyGen email or CAPTCHA from a browser the user cannot see.
