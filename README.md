@@ -7,13 +7,13 @@
 在 PAVE 對話貼這一行：
 
 ```
-install https://github.com/johnmak101-ops/pave-setup
+install https://github.com/cnrai/pave-transin-setup
 ```
 
 agent 會 clone、安裝、驗證，然後用表格報告。要自己跑也可以：
 
 ```bash
-git clone --depth 1 https://github.com/johnmak101-ops/pave-setup /tmp/pave-setup
+git clone --depth 1 https://github.com/cnrai/pave-transin-setup /tmp/pave-setup
 bash /tmp/pave-setup/install.sh --agents "$PWD/AGENTS.md"
 bash /tmp/pave-setup/verify.sh
 ```

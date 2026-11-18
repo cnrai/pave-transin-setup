@@ -271,7 +271,7 @@ Do not write a script until both connectors fail. Say why.
 
 ## 15. Installing the toolchain
 
-When the user pastes a line like `install https://github.com/johnmak101-ops/pave-setup`:
+When the user pastes a line like `install https://github.com/cnrai/pave-transin-setup`:
 
 1. Clone the repo to `/tmp/pave-setup`.
 2. Read `/tmp/pave-setup/INSTALL.md` and follow it exactly.

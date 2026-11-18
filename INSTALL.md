@@ -3,7 +3,7 @@
 用戶在對話貼了類似這一行：
 
 ```
-install https://github.com/johnmak101-ops/pave-setup
+install https://github.com/cnrai/pave-transin-setup
 ```
 
 意思是：**在這個 sandbox 裝好 PAVE 的工具鏈，然後報告**。請照下面做，不要先問問題。
@@ -12,7 +12,7 @@ install https://github.com/johnmak101-ops/pave-setup
 
 ```bash
 rm -rf /tmp/pave-setup
-git clone --depth 1 https://github.com/johnmak101-ops/pave-setup /tmp/pave-setup
+git clone --depth 1 https://github.com/cnrai/pave-transin-setup /tmp/pave-setup
 ```
 
 如果 `git` 不可用，退而用 curl 下載 zip，解壓到 `/tmp/pave-setup`。
