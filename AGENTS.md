@@ -276,9 +276,17 @@ When the user pastes a line like `install https://github.com/cnrai/pave-transin-
 1. Clone the repo to `/tmp/pave-setup`.
 2. Read `/tmp/pave-setup/INSTALL.md` and follow it exactly.
 3. `install.sh` starts Playwright, Chrome, Chromium, and `agent-browser` installation in the background by default. Do not wait for it in the main session. `--no-browser` is only for an explicit user request.
-4. Immediately start a background monitoring sub-session. It must poll `bash /tmp/pave-setup/browser-install-status.sh` every 20-30 seconds until `state=done`, `partial`, or `failed`, then report the real result. Do not busy-wait in the main session.
+4. Immediately start a background monitoring sub-session. It should run `bash /tmp/pave-setup/browser-install-wait.sh`, which returns as soon as the state is `done`, `partial`, or `failed`; report the real result. Do not busy-wait or use a fixed timer in the main session.
 5. Run `/tmp/pave-setup/verify.sh` and report the real output. `WAIT` means the background browser install is still running, not a failure. A `MISS` line is not a success.
 6. Say plainly that installing is not logging in. The logins are the user's job: `/setup`.
 7. Never start the sandbox-side HeyGen email flow when the user cannot see the browser. Use the user-owned magic-link flow.
+
+Installer invariants:
+
+| Rule | Enforced by |
+|---|---|
+| `unzip` must exist before the Composio installer runs | `preflight` installs it when possible; `install_composio` refuses with a clear message otherwise |
+| Every global npm install goes under `~/.npm-global` | `NPM_CONFIG_PREFIX` is exported by `install.sh` and inherited by the background installer |
+| Browser completion must not wait on a fixed timer | `browser-install-wait.sh` exits immediately on `done`, `partial`, or `failed` |
 
 Never write a session token, API key, or cookie into a file, a commit, or the chat.

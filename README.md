@@ -61,6 +61,7 @@ bash browser-install-status.sh
 install.sh    主安裝，可重複執行
 install-browser-background.sh  背景安裝 Playwright + Chrome
 browser-install-status.sh      查背景安裝狀態
+browser-install-wait.sh        等背景安裝完成
 verify.sh     逐項檢查，印表
 INSTALL.md    給 agent 看的流程
 AGENTS.md     全局規則，寫入工作區根目錄

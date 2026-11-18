@@ -10,6 +10,10 @@ ALLOW_APT="${ALLOW_APT:-1}"
 mkdir -p "$STATE_DIR"
 
 export PATH="$HOME/.local/bin:$HOME/.composio:$HOME/.npm-global/bin:$PATH"
+NPM_PREFIX="${NPM_CONFIG_PREFIX:-$HOME/.npm-global}"
+export NPM_CONFIG_PREFIX="$NPM_PREFIX"
+mkdir -p "$NPM_PREFIX/bin"
+export PATH="$NPM_PREFIX/bin:$PATH"
 export npm_config_yes=true
 export DEBIAN_FRONTEND=noninteractive
 

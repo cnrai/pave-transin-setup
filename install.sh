@@ -46,15 +46,50 @@ SKILL_SRC="$REPO_DIR/skills"
 PAVE_HOME="${PAVE_HOME:-$HOME/.pave}"
 SKILLS_DIR="$PAVE_HOME/skills"
 [ -n "$AGENTS_TARGET" ] || AGENTS_TARGET="$PWD/AGENTS.md"
+NPM_PREFIX="${NPM_CONFIG_PREFIX:-$HOME/.npm-global}"
+export NPM_CONFIG_PREFIX="$NPM_PREFIX"
+mkdir -p "$NPM_PREFIX/bin"
 
-export PATH="$HOME/.local/bin:$HOME/.composio:$HOME/.npm-global/bin:$PATH"
+export PATH="$NPM_PREFIX/bin:$HOME/.local/bin:$HOME/.composio:$HOME/.npm-global/bin:$PATH"
 
 have() { command -v "$1" >/dev/null 2>&1; }
 step() { printf '\n== %s\n' "$*"; }
 warn() { printf '   ! %s\n' "$*" >&2; }
 ok()   { printf '   + %s\n' "$*"; }
 
-mkdir -p "$HOME/.local/bin" "$HOME/.composio" "$HOME/.npm-global/bin" "$SKILLS_DIR"
+as_root() {
+  if [ "$(id -u)" -eq 0 ]; then
+    "$@"
+  elif have sudo && sudo -n true >/dev/null 2>&1; then
+    sudo -n "$@"
+  else
+    return 1
+  fi
+}
+
+preflight() {
+  step "Prerequisites"
+  mkdir -p "$HOME/.local/bin" "$HOME/.composio" "$NPM_PREFIX/bin" "$SKILLS_DIR"
+
+  if have npm; then
+    ok "npm global prefix: $NPM_CONFIG_PREFIX"
+  else
+    warn "npm not found: heygen-mcp, Playwright, and agent-browser cannot install"
+  fi
+
+  if have unzip; then
+    ok "unzip present"
+  elif [ "$ALLOW_APT" -eq 1 ] && have apt-get && as_root apt-get update >/dev/null 2>&1; then
+    if as_root apt-get install -y unzip >/dev/null 2>&1 && have unzip; then
+      ok "unzip installed"
+    else
+      warn "unzip install failed; composio will be skipped"
+    fi
+  else
+    warn "unzip missing; install it before composio: sudo apt-get install -y unzip"
+  fi
+}
+
 
 # ---------------------------------------------------------------- skills
 copy_skills() {
@@ -107,6 +142,10 @@ install_oo() {
 install_composio() {
   step "composio"
   if have composio; then ok "already: present"; return 0; fi
+  if ! have unzip; then
+    warn "unzip is required by the composio installer; run: sudo apt-get install -y unzip"
+    return 1
+  fi
   # --no-plugins keeps this to the single binary: no editor or agent plugins.
   if curl -fsSL https://composio.dev/install | sh -s -- --no-plugins; then
     export PATH="$HOME/.composio:$HOME/.local/bin:$PATH"
@@ -150,10 +189,11 @@ start_browser_install() {
 
   printf 'state=starting\nphase=launching\nstarted=%s\nlog=%s\n' \
     "$(date -u +%Y-%m-%dT%H:%M:%SZ)" "$log" > "$status"
-  PAVE_HOME="$PAVE_HOME" ALLOW_APT="$ALLOW_APT" \
+  PAVE_HOME="$PAVE_HOME" ALLOW_APT="$ALLOW_APT" NPM_CONFIG_PREFIX="$NPM_CONFIG_PREFIX" \
     nohup bash "$REPO_DIR/install-browser-background.sh" >"$state_dir/launcher.log" 2>&1 &
   ok "started in background"
   printf '   status: bash %s/browser-install-status.sh\n' "$REPO_DIR"
+  printf '   wait:   bash %s/browser-install-wait.sh\n' "$REPO_DIR"
 }
 
 # ---------------------------------------------------------------- heygen-mcp
@@ -174,6 +214,7 @@ install_heygen() {
 # ---------------------------------------------------------------- main
 echo "pave-setup  home=$HOME  repo=$REPO_DIR"
 
+preflight
 copy_skills
 write_agents
 
@@ -197,4 +238,5 @@ fi
 printf '\nDone. Next: bash %s/verify.sh\n' "$REPO_DIR"
 if [ "$SKILLS_ONLY" -ne 1 ] && [ "$NO_BROWSER" -ne 1 ]; then
   printf 'Browser install continues in background. Monitor: bash %s/browser-install-status.sh\n' "$REPO_DIR"
+  printf 'Wait for completion: bash %s/browser-install-wait.sh\n' "$REPO_DIR"
 fi

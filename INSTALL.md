@@ -40,21 +40,26 @@ bash /tmp/pave-setup/install.sh --no-browser
 1. 告訴用戶：CLI 已處理，Playwright + Chrome 正在背景安裝。
 2. **開一個背景子 session 專門監控**，不要讓主對話等 npm 或 Chrome 下載。
 
-子 session 的責任：
+子 session 的責任是執行一個會「完成就立即返回」的等待器，不要用固定時間 timer：
+
+```bash
+bash /tmp/pave-setup/browser-install-wait.sh
+```
+
+- `state=done`：回報 Playwright + Chrome 完成。
+- `state=partial`：回報哪一個瀏覽器元件失敗。
+- `state=failed`：腳本會附上 `install.log` 最後 40 行，回報真正錯誤。
+- 預設最多等 30 分鐘；超時才停止。
+- 子 session 完成後把結果回給主 session，由主 session 向用戶總結。
+
+需要即時查看時才執行：
 
 ```bash
 bash /tmp/pave-setup/browser-install-status.sh
 ```
 
-- 每 20-30 秒讀一次狀態。
-- `state=running` 或 `state=starting`：繼續等。
-- `state=done`：回報 Playwright + Chrome 完成。
-- `state=partial`：回報哪一個瀏覽器元件失敗。
-- `state=failed`：讀 `~/.pave/browser-install/install.log` 最後 40 行，回報真正錯誤。
-- 最多等 30 分鐘；不要無限重試。
-- 子 session 完成後把結果回給主 session，由主 session 向用戶總結。
-
 不要在主 session 同步等待這個背景工作。
+
 
 ## 3. 驗證
 
@@ -135,6 +140,7 @@ Playwright + Chrome 的下載由背景子 session 監控；主對話先繼續。
 | `install.sh` | 主安裝腳本，可重複執行 |
 | `install-browser-background.sh` | 背景安裝 Playwright、Chrome、Chromium、agent-browser |
 | `browser-install-status.sh` | 查詢背景瀏覽器安裝狀態與最近 log |
+| `browser-install-wait.sh` | 等到完成才返回，適合背景子 session |
 | `verify.sh` | 逐項檢查並印表 |
 | `AGENTS.md` | PAVE 的全局規則，寫入工作區 |
 | `skills/` | 7 個 skill，複製到 `~/.pave/skills/` |
